@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="js/vue.js"></script>
+  <script src="js/axios.min.js"></script>
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/signin.css" rel="stylesheet">
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <title>註冊頁面</title>
+</head>
+<div id="app" class="container">
+
+  <div v-if="identity === 'unregistered'">
+
+    <body class="text-center">
+      <main class="form-signin w-100 m-auto">
+        <h1 class="h3 mb-3 fw-normal">Create Account</h1>
+        <div class="form-floating">
+          <input v-model="account" type="text" class="form-control" placeholder="Account" style="ime-mode:active">
+          <label>Account</label>
+        </div>
+        <br>
+        <div class="form-floating">
+          <input v-model="password" type="password" class="form-control" placeholder="Password" style="ime-mode:active">
+          <label>Password</label>
+        </div>
+        <br>
+        <div class="form-floating">
+          <input v-model="channelName" type="text" class="form-control" placeholder="Invitation Code"
+            style="ime-mode:active">
+          <label>Invitation Code</label>
+        </div>
+        <br>
+        <button @click="register" class="w-100 btn btn-lg btn-primary" :disabled="state">Create</button>
+      </main>
+    </body>
+  </div>
+
+  <div v-if="identity === 'user'">
+    <img :src="userToken.picture" class="img-fluid" style="width:100px; height:100px; border-radius:50%;">
+    <br>
+    <h1 class="h3 mb-3 fw-normal">{{userToken.name}}</h1>
+    <br>
+  </div>
+</div>
+
+</html>
+
+<script>
+  const { createApp } = Vue
+  createApp({
+    data() {
+      return {
+        identity: '',
+        userToken: {},
+
+        account: '',
+        password: '',
+        channelName: '',
+
+        state: false,
+
+      }
+    },
+    mounted() {
+      this.init();
+    },
+    methods: {
+      init: function () {
+
+        this.account = '';
+        this.password = '';
+        this.identity = '';
+
+        this.state = false;
+
+        this.userToken = {};
+
+        liff.init({ liffId: '1657615291-2z6Nz660' }).then(() => {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+          }
+
+          this.userToken = liff.getDecodedIDToken();
+
+          console.log(this.userToken.sub)
+
+          let data = {
+            token: this.userToken.sub,
+          }
+          axios
+            .post('/line_service/checkToken', data = data)
+            .then(res => {
+              let result = res.data;
+              switch (result.status) {
+                case 1:
+                  this.identity = 'user';
+                  break;
+
+                case 0:
+                  alert('系統錯誤，請與系統管理者聯繫');
+                  break;
+
+                case 101:
+                  alert('資料格式不符合規範，請與系統管理者聯繫!');
+                  break;
+
+                case 102:
+                  this.identity = 'unregistered';
+                  break;
+              }
+            })
+            .catch(err => {
+
+            })
+
+        });
+      },
+      register: function () {
+        this.status = true;
+
+        const regex = new RegExp("^((?=.{8,12}$)(?=.*[a-z])(?=.*[A-Z]))");
+
+        if (this.account.length < 8) {
+          alert('帳號長度至少大於8!');
+          this.status = false;
+          return
+        }
+
+        if (regex.test(this.password) == false) {
+          alert('密碼格式請使用8到12位，且大小寫英文混合!');
+          this.status = false;
+          return
+        }
+
+        if (!this.channelName.length) {
+          alert('請填入邀請碼!');
+          this.status = false;
+          return
+        }
+
+        let data = {
+          token: String(this.userToken.sub),
+          name: String(this.userToken.name),
+          account: String(this.account),
+          password: String(this.password),
+          channelName: String(this.channelName),
+        }
+
+        axios
+          .post('/line_service/register', data = data)
+          .then(res => {
+            let result = res.data;
+            switch (result.status) {
+              case 1:
+                alert('註冊成功!');
+                this.identity = 'user';
+                this.status = false;
+                this.init();
+                break;
+
+              case 0:
+                alert('系統錯誤，請與系統管理者聯繫');
+                this.status = false;
+                break;
+
+              case 101:
+                alert('資料格式不符合規範，請與系統管理者聯繫!');
+                this.status = false;
+                break;
+
+              case 102:
+                alert('帳號重複，請重新輸入');
+                this.account = '';
+                this.status = false;
+                break;
+
+              case 103:
+                alert('無效的邀請碼，請確認場域邀請碼是否正確');
+                this.status = false;
+                break;
+
+              case 104:
+                alert('密碼格式請使用8到12位，且大小寫英文混合!');
+                this.status = false;
+                break;
+
+              case 110:
+                alert('資料中存在違規的特殊符號!');
+                this.status = false;
+                break;
+            }
+          })
+          .catch(err => {
+
+          })
+      }
+    },
+  }).mount('#app')
+</script>

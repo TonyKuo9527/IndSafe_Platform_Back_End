@@ -1,0 +1,40 @@
+{
+  "name": "lineservice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon  server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyguo0815/LineService.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tonyguo0815/LineService/issues"
+  },
+  "homepage": "https://github.com/tonyguo0815/LineService#readme",
+  "dependencies": {
+    "@line/bot-sdk": "^7.5.2",
+    "axios": "^1.1.3",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "json2csv": "^5.0.7",
+    "jsonwebtoken": "^8.5.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "node-input-validator": "^4.5.0",
+    "nodemon": "^2.0.20",
+    "query-string": "^7.1.1",
+    "redis": "^4.5.1",
+    "uuid": "^9.0.0"
+  }
+}

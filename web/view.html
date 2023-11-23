@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="js/vue.js"></script>
+  <script src="js/axios.min.js"></script>
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/signin.css" rel="stylesheet">
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <title>警報資訊</title>
+</head>
+<div id="app" class="container">
+  <div v-if="identity!=='allow'">
+    <body class="text-center">
+      <main class="form-signin w-100 m-auto">
+        <h4>{{identity}}</h4>
+      </main>
+    </body>
+  </div>
+  <div v-if="identity==='allow'">
+
+    <body class="text-center">
+      <main class="form-signin w-100 m-auto">
+        <h1 class="h3 mb-3 fw-normal">{{ alert.channel }}</h1>
+        <div class="form-floating">
+          <input v-model="alert.type" type="text" class="form-control" placeholder="Type" style="ime-mode:active"
+            disabled>
+          <label>Type</label>
+        </div>
+        <br>
+        <div class="form-floating">
+          <input v-model="alert.cameraID" type="text" class="form-control" placeholder="cameraID"
+            style="ime-mode:active" disabled>
+          <label>cameraID</label>
+        </div>
+        <br>
+        <div class="form-floating">
+          <input v-model="alert.timestamp" type="text" class="form-control" placeholder="Timestamp"
+            style="ime-mode:active" disabled>
+          <label>Timestamp</label>
+        </div>
+        <br>
+        <label>Alert Image</label>
+        <div class="form-floating">
+          <img :src="alert.image" class="img-fluid">
+        </div>
+        <br>
+        <label>Rtsp Live</label>
+        <div class="form-floating">
+          <img :src="alert.rtsp" class="img-fluid">
+        </div>
+      </main>
+    </body>
+  </div>
+</div>
+
+</html>
+
+<script>
+  const { createApp } = Vue
+  createApp({
+    data() {
+      return {
+        identity: '',
+        image: '',
+        userToken: {},
+        alert: {
+          channel: '',
+          type: '',
+          timestamp: '',
+          description: '',
+          image: '',
+          rtsp: ''
+        }
+      }
+    },
+    mounted() {
+      if (!location.search && !location.hash) {
+        localStorage.setItem('image', '');
+      }
+
+      if (location.hash.split('#')[1]) {
+        localStorage.setItem('image', location.hash.split('#')[1]);
+      }
+      this.init();
+    },
+    methods: {
+      init: function () {
+        this.userToken = {};
+
+        liff.init({ liffId: '1657615291-0gnXYnn6' }).then(() => {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+          }
+
+          this.userToken = liff.getDecodedIDToken();
+
+          this.image = localStorage.getItem('image');
+
+          let data = {
+            image: this.image,
+            token: this.userToken.sub
+          }
+          axios
+            .post('/line_service/getAlertInfo', data = data)
+            .then(res => {
+              let result = res.data;
+              switch (result.status) {
+                case 1:
+                  this.alert.channel = result.data[0].channelName;
+                  this.alert.timestamp = result.data[0].timestamp;
+                  this.alert.cameraID = result.data[0].cameraID;
+                  this.alert.image = '/image/' + result.data[0].image;
+
+
+                  switch (result.data[0].type) {
+                    case 1:
+                      this.alert.type = "Not wearing hat";
+                      break;
+                    case 0:
+                      this.alert.type = "Not using hook";
+                      break;
+                    case 2:
+                      this.alert.type = "Didn't wear vest";
+                      break;
+                    case 3:
+                      this.alert.type = "Not use chinstrap";
+                      break;
+                    default:
+                      this.alert.type = '未知';
+                      break;
+                  };
+
+                  this.alert.rtsp = 'https://rtsp.ap.ngrok.io/video_feed/' + result.data[0].cameraID;
+
+                  this.identity = 'allow';
+                  break;
+
+                case 0:
+                  this.identity = '系統錯誤，請與系統管理者聯繫';
+                  break;
+
+                case 102:
+                  this.identity = '請先註冊後，再使用此功能';
+                  break;
+
+                case 103:
+                  this.identity = '無效的警報連結';
+                  break;
+
+                case 104:
+                  this.identity = '未綁定該場域，無法檢視';
+                  break;
+              }
+            })
+            .catch(err => {
+
+            })
+        });
+
+      }
+    },
+  }).mount('#app')
+</script>

@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  mysqldb:
+    image: ai/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD = ai2022
+    volumes:
+      - /home/volume/mysql:/var/lib/mysql
+
+  webserver:
+    image: ai/webserver
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - mysqldb
+
